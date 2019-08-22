@@ -16,6 +16,7 @@ PUSH = 0b01000101
 POP = 0b01000110
 PRN = 0b01000111
 
+
 class CPU:
     """Main CPU class."""
 
@@ -27,9 +28,10 @@ class CPU:
         self.MAR = None
         self.MDR = None
         self.reg = [0] * 8
-        self.reg[7] = 0xF4
+        # self.reg[7] = 0xF4
         self.ram = [0] * 256
         self.ram[0] = 0x00
+        self.SP = 7
 
         # self.reg[5] = IM
         # self.reg[6] = IS
@@ -38,7 +40,7 @@ class CPU:
         """Load a program into memory."""
 
         try:
-            address = 0 
+            address = 0
 
             with open(filename) as f:
                 for line in f:
@@ -64,11 +66,9 @@ class CPU:
                     # increment address for next value
                     address += 1
 
-
         except FileNotFoundError:
             print(f"{sys.argv[0]}: {sys.argv[1]} not found")
             sys.exit(2)
-
 
         # For now, we've just hardcoded a program:
 
@@ -91,10 +91,10 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        
+
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
-        
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -146,9 +146,8 @@ class CPU:
             self.IR = self.ram[pc]
 
             # starting at beginning
-            # command = self.ram[pc] 
+            # command = self.ram[pc]
             # command is self.IR
-
 
             if self.IR == LDI:
                 print("LDI")
@@ -170,6 +169,45 @@ class CPU:
                 print("HLT")
                 running = False
                 self.PC += 1
+
+            elif self.IR == PUSH:
+                """ Push the value in the given register on the stack.
+                    Decrement the SP.
+                    Copy the value in the given register to the address pointed to by SP."""
+
+                print("PUSH")
+
+                # decrement the SP
+                # decrement what the SP points to
+                # reg[7] now points to...
+                self.reg[self.SP] -= 1
+
+                # get the value at that register
+                value = self.reg[operand_a]
+                # print("Reg # and Value: ", operand_a, value)
+
+                # set memory at register SP to value
+                self.ram[self.reg[self.SP]] = value
+
+                self.PC += 2
+
+            elif self.IR == POP:
+                """ Pop the value at the top of the stack into the given register.
+                    Copy the value from the address pointed to by SP to the given register.
+                    Increment SP."""
+
+                print("POP")
+
+                # get the value of address in mem pointed to by SP
+                value = self.ram[self.reg[self.SP]]
+
+                # set this value to register
+                self.reg[operand_a] = value
+
+                # increment SP
+                self.reg[self.SP] += 1
+
+                self.PC += 2
 
             else:
                 print(f"Unknown instruction: {self.IR}")
